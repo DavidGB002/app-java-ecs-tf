@@ -1,4 +1,4 @@
-name: $(NAMEAPP)-$(GITHUB_RUN_ID)
+name: pipeline-deploy
 
 on:
   push:
