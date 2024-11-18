@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4.5.0
         with:
           java-version: '17'
           distribution: 'adoptopenjdk'
@@ -63,12 +63,6 @@ jobs:
           fi
           docker stop test_container
           docker image prune -a -f
-
-      - name: Publish Build Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: drop
-          path: ./target
 
 
   dev:
