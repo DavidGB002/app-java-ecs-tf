@@ -17,7 +17,7 @@ on:
 
 env:
   NAMEAPP: maven-java
-  DEPENDENCY_CHECK: 'true'
+  DEPENDENCY_CHECK: 'true'           
 
 jobs:
   build_dev:
@@ -70,7 +70,6 @@ jobs:
           fi
           docker stop test_container
           docker image prune -a -f
-
 
   dev:
     if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.head_ref, 'refs/heads/dev')
@@ -130,16 +129,6 @@ jobs:
         run: |
           docker rmi -f ${{ env.NAMEAPP }}
 
-      - name: Clean up ignore files
-        run: |
-          rm -rf .git .gitignore .dockerignore
-
-      - name: Publish Build Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: drop
-          path: ./target
-
   prd:
     if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.head_ref, 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -158,21 +147,12 @@ jobs:
           mvn clean install
           mvn compile
           mvn install
-
+        
       - name: Build Docker image
         run: |
           docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
-
+  
       - name: Remove Docker image
         run: |
           docker rmi -f ${{ env.NAMEAPP }}
 
-      - name: Clean up ignore files
-        run: |
-          rm -rf .git .gitignore .dockerignore
-
-      - name: Publish Build Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: drop
-          path: ./target
