@@ -1,0 +1,182 @@
+name: $(NAMEAPP)-$(GITHUB_RUN_ID)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - dev/*
+      - qa
+      - qa/*
+      - HU_*
+  pull_request:
+    branches:
+      - main
+      - dev
+      - qa
+
+env:
+  NAMEAPP: maven-java
+  DEPENDENCY_CHECK: 'true'
+
+jobs:
+  build_dev:
+    if: startsWith(github.ref, 'refs/heads/HU_')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adoptopenjdk'
+
+      - name: Install dependencies and build project
+        run: |
+          mvn clean install
+          mvn compile
+          mvn install
+
+      - name: Dependency Check
+        if: ${{ env.DEPENDENCY_CHECK == 'true' }}
+        run: |
+          mvn dependency-check:check
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Run Docker container and test
+        run: |
+          docker run -d --name test_container -p 80:8080 ${{ env.NAMEAPP }}
+          sleep 15
+          container_status=$(docker ps --filter "name=test_container" --filter "status=running" -q)
+          if [ -n "$container_status" ]; then
+            echo "Contenedor ejecutado con éxito"
+            docker logs test_container
+          else
+            echo "Error al ejecutar el contenedor"
+            docker ps -a --filter "name=test_container"
+            docker logs test_container
+          fi
+          docker stop test_container
+          docker image prune -a -f
+
+      - name: Publish Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: drop
+          path: ./target
+
+  dev:
+    if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.head_ref, 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adoptopenjdk'
+
+      - name: Install dependencies and build project
+        run: |
+          mvn clean install
+          mvn compile
+          mvn install
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Clean up ignore files
+        run: |
+          rm -rf .git .gitignore .dockerignore
+
+      - name: Publish Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: drop
+          path: ./target
+
+  qa:
+    if: startsWith(github.ref, 'refs/heads/qa') || startsWith(github.head_ref, 'refs/heads/qa')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adoptopenjdk'
+
+      - name: Install dependencies and build project
+        run: |
+          mvn clean install
+          mvn compile
+          mvn install
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Clean up ignore files
+        run: |
+          rm -rf .git .gitignore .dockerignore
+
+      - name: Publish Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: drop
+          path: ./target
+
+  prd:
+    if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.head_ref, 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adoptopenjdk'
+
+      - name: Install dependencies and build project
+        run: |
+          mvn clean install
+          mvn compile
+          mvn install
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Clean up ignore files
+        run: |
+          rm -rf .git .gitignore .dockerignore
+
+      - name: Publish Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: drop
+          path: ./target
