@@ -70,6 +70,7 @@ jobs:
           name: drop
           path: ./target
 
+
   dev:
     if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.head_ref, 'refs/heads/dev')
     runs-on: ubuntu-latest
@@ -100,12 +101,6 @@ jobs:
       - name: Clean up ignore files
         run: |
           rm -rf .git .gitignore .dockerignore
-
-      - name: Publish Build Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: drop
-          path: ./target
 
   qa:
     if: startsWith(github.ref, 'refs/heads/qa') || startsWith(github.head_ref, 'refs/heads/qa')
