@@ -31,7 +31,6 @@ jobs:
         uses: actions/setup-java@v4.5.0
         with:
           java-version: '17'
-          distribution: 'adoptopenjdk'
 
       - name: Install dependencies and build project
         run: |
