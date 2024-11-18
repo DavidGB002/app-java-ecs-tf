@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-java@v4.5.0
         with:
           java-version: 17
-          distribution: 'adoptopenjdk'
+          distribution: 'jdk'
           java-package: jdk
           check-latest: false
           server-id: github
