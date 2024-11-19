@@ -19,3 +19,16 @@ hs_err_pid*
 
 # intellij
 .idea
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/crash.log
+terraform/.terraformrc
+terraform/override.tf
+terraform/override.tf.json
+terraform/*.tfplan
+terraform/*.tfvars
+!terraform/variables.tfvars # Exclude specific shared variables if neede
