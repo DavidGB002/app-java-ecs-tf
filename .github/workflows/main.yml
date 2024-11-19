@@ -1,0 +1,188 @@
+name: pipeline-deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - dev/*
+      - qa
+      - qa/*
+      - HU_*
+  pull_request:
+    branches:
+      - main
+      - dev
+      - qa
+
+env:
+  NAMEAPP: maven-java
+  DEPENDENCY_CHECK: 'true'           
+
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: "devops/demob"
+  ECS_SERVICE: "javamvn-app-service"    
+  ECS_CLUSTER: "devops-cluster"    
+  ECS_TASK_DEFINITION: "javamvn-app-task-definition.json"
+  CONTAINER_NAME: "javamvn-app"        
+
+jobs:
+  build_dev:
+    if: startsWith(github.ref, 'refs/heads/HU_')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Analyze with CodeQL
+        uses: codebeltnet/codeql-scan@v1.0.0
+        with:
+          languages: java
+          
+  
+      # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
+      #- name: Update dependency graph
+      #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+
+      #- name: Dependency Check
+      #  if: ${{ env.DEPENDENCY_CHECK == 'true' }}
+      #  run: |
+      #   mvn dependency-check:check
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Run Docker container and test
+        run: |
+          docker run -d --name test_container -p 80:8080 ${{ env.NAMEAPP }}
+          sleep 15
+          container_status=$(docker ps --filter "name=test_container" --filter "status=running" -q)
+          if [ -n "$container_status" ]; then
+            echo "Contenedor ejecutado con éxito"
+            docker logs test_container
+          else
+            echo "Error al ejecutar el contenedor"
+            docker ps -a --filter "name=test_container"
+            docker logs test_container
+          fi
+          docker stop test_container
+          docker image prune -a -f
+
+  dev:
+    if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.head_ref, 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Run AWS Deploy Workflow
+        uses: ./.github/workflows/deploy-ecs.yml
+        with:
+          aws_region: ${{ secrets.AWS_REGION }}
+          ecr_repository: ${{ env.ECR_REPOSITORY }}
+          ecs_service: ${{ env.ECS_SERVICE }}
+          ecs_cluster: ${{ env.ECS_CLUSTER }}
+          ecs_task_definition: ${{ env.ECS_TASK_DEFINITION }}
+          container_name: ${{ env.CONTAINER_NAME }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}    
+
+  qa:
+    if: startsWith(github.ref, 'refs/heads/qa') || startsWith(github.head_ref, 'refs/heads/qa')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Run AWS Deploy Workflow
+        uses: ./.github/workflows/deploy-ecs.yml
+        with:
+          aws_region: ${{ secrets.AWS_REGION }}
+          ecr_repository: ${{ env.ECR_REPOSITORY }}
+          ecs_service: ${{ env.ECS_SERVICE }}
+          ecs_cluster: ${{ env.ECS_CLUSTER }}
+          ecs_task_definition: ${{ env.ECS_TASK_DEFINITION }}
+          container_name: ${{ env.CONTAINER_NAME }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+
+  prd:
+    if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.head_ref, 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+        
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile -t ${{ env.NAMEAPP }} .
+  
+      - name: Remove Docker image
+        run: |
+          docker rmi -f ${{ env.NAMEAPP }}
+
+      - name: Run AWS Deploy Workflow
+        uses: ./.github/workflows/deploy-ecs.yml
+        with:
+          aws_region: ${{ secrets.AWS_REGION }}
+          ecr_repository: ${{ env.ECR_REPOSITORY }}
+          ecs_service: ${{ env.ECS_SERVICE }}
+          ecs_cluster: ${{ env.ECS_CLUSTER }}
+          ecs_task_definition: ${{ env.ECS_TASK_DEFINITION }}
+          container_name: ${{ env.CONTAINER_NAME }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+
