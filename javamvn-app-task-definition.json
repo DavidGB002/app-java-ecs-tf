@@ -1,9 +1,9 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-east-2:296062584389:task-definition/javamvn-app-task-definition:5",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-2:296062584389:task-definition/javamvn-app-task-definition",
     "containerDefinitions": [
         {
             "name": "javamvn-app",
-            "image": "296062584389.dkr.ecr.us-east-2.amazonaws.com/devops/demob:latest",
+            "image": "296062584389.dkr.ecr.us-east-2.amazonaws.com/devops/demob",
             "cpu": 1024,
             "memory": 1024,
             "portMappings": [
@@ -40,7 +40,6 @@
     "taskRoleArn": "arn:aws:iam::296062584389:role/ecsTaskExecutionRole",
     "executionRoleArn": "arn:aws:iam::296062584389:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "revision": 5,
     "volumes": [],
     "status": "ACTIVE",
     "requiresAttributes": [
