@@ -20,7 +20,7 @@ env:
   DEPENDENCY_CHECK: 'true'           
 
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: "devops/demob"
+  ECR_REPOSITORY: "devops-demob"
   ECS_SERVICE: "javamvn-app-service"    
   ECS_CLUSTER: "devops-cluster"    
   ECS_TASK_DEFINITION: "javamvn-app-task-definition.json"
